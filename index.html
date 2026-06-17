@@ -1,0 +1,553 @@
+import { useState, useEffect, useCallback } from "react";
+
+const AYSEN_OFFSET = 1; // +1hr sobre Chile continental
+
+// Todos los partidos fase de grupos con hora Santiago
+const PARTIDOS_BASE = [
+  // Fecha 1
+  {id:1,dia:"Jue 11 jun",fecha:"2026-06-11",equipos:["México","Sudáfrica"],grupo:"A",horaSantiago:"15:00",sede:"Ciudad de México",canales:["CHV","DSP","D+"],jornada:1},
+  {id:2,dia:"Jue 11 jun",fecha:"2026-06-11",equipos:["Corea del Sur","Rep. Checa"],grupo:"A",horaSantiago:"22:00",sede:"Guadalajara",canales:["DSP"],jornada:1},
+  {id:3,dia:"Vie 12 jun",fecha:"2026-06-12",equipos:["Canadá","Bosnia y Herz."],grupo:"B",horaSantiago:"15:00",sede:"Toronto",canales:["CHV","DSP","D+"],jornada:1},
+  {id:4,dia:"Vie 12 jun",fecha:"2026-06-12",equipos:["Estados Unidos","Paraguay"],grupo:"D",horaSantiago:"21:00",sede:"Los Ángeles",canales:["CHV","DSP","D+"],jornada:1},
+  {id:5,dia:"Sáb 13 jun",fecha:"2026-06-13",equipos:["Qatar","Suiza"],grupo:"B",horaSantiago:"15:00",sede:"San Francisco",canales:["CHV","DSP"],jornada:1},
+  {id:6,dia:"Sáb 13 jun",fecha:"2026-06-13",equipos:["Brasil","Marruecos"],grupo:"C",horaSantiago:"18:00",sede:"Nueva Jersey",canales:["CHV","DSP","D+"],jornada:1},
+  {id:7,dia:"Sáb 13 jun",fecha:"2026-06-13",equipos:["Haití","Escocia"],grupo:"C",horaSantiago:"21:00",sede:"Boston",canales:["DSP"],jornada:1},
+  {id:8,dia:"Dom 14 jun",fecha:"2026-06-14",equipos:["Australia","Turquía"],grupo:"D",horaSantiago:"00:00",sede:"Vancouver",canales:["DSP"],jornada:1},
+  {id:9,dia:"Dom 14 jun",fecha:"2026-06-14",equipos:["Alemania","Curazao"],grupo:"E",horaSantiago:"13:00",sede:"Houston",canales:["DSP"],jornada:1},
+  {id:10,dia:"Dom 14 jun",fecha:"2026-06-14",equipos:["Países Bajos","Japón"],grupo:"F",horaSantiago:"16:00",sede:"Dallas",canales:["CHV","DSP","D+"],jornada:1},
+  {id:11,dia:"Dom 14 jun",fecha:"2026-06-14",equipos:["Costa de Marfil","Ecuador"],grupo:"E",horaSantiago:"19:00",sede:"Filadelfia",canales:["CHV","DSP","D+"],jornada:1},
+  {id:12,dia:"Dom 14 jun",fecha:"2026-06-14",equipos:["Suecia","Túnez"],grupo:"F",horaSantiago:"22:00",sede:"Monterrey",canales:["DSP"],jornada:1},
+  {id:13,dia:"Lun 15 jun",fecha:"2026-06-15",equipos:["España","Cabo Verde"],grupo:"H",horaSantiago:"12:00",sede:"Atlanta",canales:["DSP","D+"],jornada:1},
+  {id:14,dia:"Lun 15 jun",fecha:"2026-06-15",equipos:["Bélgica","Egipto"],grupo:"G",horaSantiago:"15:00",sede:"Seattle",canales:["CHV","DSP"],jornada:1},
+  {id:15,dia:"Lun 15 jun",fecha:"2026-06-15",equipos:["Arabia Saudita","Uruguay"],grupo:"H",horaSantiago:"18:00",sede:"Miami",canales:["CHV","DSP","D+"],jornada:1},
+  {id:16,dia:"Lun 15 jun",fecha:"2026-06-15",equipos:["Irán","Nueva Zelanda"],grupo:"G",horaSantiago:"21:00",sede:"Los Ángeles",canales:["DSP"],jornada:1},
+  {id:17,dia:"Mar 16 jun",fecha:"2026-06-16",equipos:["Francia","Senegal"],grupo:"I",horaSantiago:"15:00",sede:"Nueva Jersey",canales:["CHV","DSP"],jornada:1},
+  {id:18,dia:"Mar 16 jun",fecha:"2026-06-16",equipos:["Irak","Noruega"],grupo:"I",horaSantiago:"18:00",sede:"Boston",canales:["DSP"],jornada:1},
+  {id:19,dia:"Mar 16 jun",fecha:"2026-06-16",equipos:["Argentina","Argelia"],grupo:"J",horaSantiago:"21:00",sede:"Kansas City",canales:["CHV","DSP","D+"],jornada:1},
+  {id:20,dia:"Mié 17 jun",fecha:"2026-06-17",equipos:["Austria","Jordania"],grupo:"J",horaSantiago:"00:00",sede:"San Francisco",canales:["DSP"],jornada:1},
+  {id:21,dia:"Mié 17 jun",fecha:"2026-06-17",equipos:["Portugal","RD Congo"],grupo:"K",horaSantiago:"13:00",sede:"Houston",canales:["DSP"],jornada:1},
+  {id:22,dia:"Mié 17 jun",fecha:"2026-06-17",equipos:["Inglaterra","Croacia"],grupo:"L",horaSantiago:"16:00",sede:"Dallas",canales:["CHV","DSP"],jornada:1},
+  {id:23,dia:"Mié 17 jun",fecha:"2026-06-17",equipos:["Ghana","Panamá"],grupo:"L",horaSantiago:"19:00",sede:"Toronto",canales:["DSP"],jornada:1},
+  {id:24,dia:"Mié 17 jun",fecha:"2026-06-17",equipos:["Uzbekistán","Colombia"],grupo:"K",horaSantiago:"22:00",sede:"Ciudad de México",canales:["CHV","DSP","D+"],jornada:1},
+  // Fecha 2
+  {id:25,dia:"Jue 18 jun",fecha:"2026-06-18",equipos:["Rep. Checa","Sudáfrica"],grupo:"A",horaSantiago:"12:00",sede:"Atlanta",canales:["DSP"],jornada:2},
+  {id:26,dia:"Jue 18 jun",fecha:"2026-06-18",equipos:["Suiza","Bosnia y Herz."],grupo:"B",horaSantiago:"15:00",sede:"Los Ángeles",canales:["CHV","DSP","D+"],jornada:2},
+  {id:27,dia:"Jue 18 jun",fecha:"2026-06-18",equipos:["Canadá","Qatar"],grupo:"B",horaSantiago:"18:00",sede:"Vancouver",canales:["CHV","DSP"],jornada:2},
+  {id:28,dia:"Jue 18 jun",fecha:"2026-06-18",equipos:["México","Corea del Sur"],grupo:"A",horaSantiago:"21:00",sede:"Guadalajara",canales:["DSP","D+"],jornada:2},
+  {id:29,dia:"Vie 19 jun",fecha:"2026-06-19",equipos:["Estados Unidos","Australia"],grupo:"D",horaSantiago:"15:00",sede:"Seattle",canales:["CHV","DSP"],jornada:2},
+  {id:30,dia:"Vie 19 jun",fecha:"2026-06-19",equipos:["Escocia","Marruecos"],grupo:"C",horaSantiago:"18:00",sede:"Boston",canales:["CHV","DSP"],jornada:2},
+  {id:31,dia:"Vie 19 jun",fecha:"2026-06-19",equipos:["Brasil","Haití"],grupo:"C",horaSantiago:"21:00",sede:"Filadelfia",canales:["DSP"],jornada:2},
+  {id:32,dia:"Vie 19 jun",fecha:"2026-06-19",equipos:["Turquía","Paraguay"],grupo:"D",horaSantiago:"23:00",sede:"San Francisco",canales:["DSP"],jornada:2},
+  {id:33,dia:"Sáb 20 jun",fecha:"2026-06-20",equipos:["Países Bajos","Suecia"],grupo:"F",horaSantiago:"13:00",sede:"Houston",canales:["DSP"],jornada:2},
+  {id:34,dia:"Sáb 20 jun",fecha:"2026-06-20",equipos:["Alemania","Costa de Marfil"],grupo:"E",horaSantiago:"16:00",sede:"Toronto",canales:["CHV","DSP","D+"],jornada:2},
+  {id:35,dia:"Sáb 20 jun",fecha:"2026-06-20",equipos:["Ecuador","Curazao"],grupo:"E",horaSantiago:"20:00",sede:"Kansas City",canales:["CHV","DSP","D+"],jornada:2},
+  {id:36,dia:"Dom 21 jun",fecha:"2026-06-21",equipos:["Túnez","Japón"],grupo:"F",horaSantiago:"00:00",sede:"Monterrey",canales:["CHV","DSP"],jornada:2},
+  {id:37,dia:"Dom 21 jun",fecha:"2026-06-21",equipos:["España","Arabia Saudita"],grupo:"H",horaSantiago:"12:00",sede:"Atlanta",canales:["CHV","DSP","D+"],jornada:2},
+  {id:38,dia:"Dom 21 jun",fecha:"2026-06-21",equipos:["Bélgica","Irán"],grupo:"G",horaSantiago:"15:00",sede:"Los Ángeles",canales:["CHV","DSP"],jornada:2},
+  {id:39,dia:"Dom 21 jun",fecha:"2026-06-21",equipos:["Uruguay","Cabo Verde"],grupo:"H",horaSantiago:"18:00",sede:"Miami",canales:["DSP"],jornada:2},
+  {id:40,dia:"Dom 21 jun",fecha:"2026-06-21",equipos:["Nueva Zelanda","Egipto"],grupo:"G",horaSantiago:"21:00",sede:"Vancouver",canales:["DSP"],jornada:2},
+  {id:41,dia:"Lun 22 jun",fecha:"2026-06-22",equipos:["Argentina","Austria"],grupo:"J",horaSantiago:"13:00",sede:"Dallas",canales:["CHV","DSP","D+"],jornada:2},
+  {id:42,dia:"Lun 22 jun",fecha:"2026-06-22",equipos:["Francia","Irak"],grupo:"I",horaSantiago:"17:00",sede:"Filadelfia",canales:["DSP"],jornada:2},
+  {id:43,dia:"Lun 22 jun",fecha:"2026-06-22",equipos:["Noruega","Senegal"],grupo:"I",horaSantiago:"20:00",sede:"Nueva Jersey",canales:["CHV","DSP"],jornada:2},
+  {id:44,dia:"Lun 22 jun",fecha:"2026-06-22",equipos:["Jordania","Argelia"],grupo:"J",horaSantiago:"23:00",sede:"San Francisco",canales:["DSP"],jornada:2},
+  {id:45,dia:"Mar 23 jun",fecha:"2026-06-23",equipos:["Portugal","Uzbekistán"],grupo:"K",horaSantiago:"13:00",sede:"Houston",canales:["CHV","DSP"],jornada:2},
+  {id:46,dia:"Mar 23 jun",fecha:"2026-06-23",equipos:["Inglaterra","Ghana"],grupo:"L",horaSantiago:"16:00",sede:"Boston",canales:["CHV","DSP"],jornada:2},
+  {id:47,dia:"Mar 23 jun",fecha:"2026-06-23",equipos:["Panamá","Croacia"],grupo:"L",horaSantiago:"19:00",sede:"Toronto",canales:["CHV","DSP"],jornada:2},
+  {id:48,dia:"Mar 23 jun",fecha:"2026-06-23",equipos:["Colombia","RD Congo"],grupo:"K",horaSantiago:"22:00",sede:"Guadalajara",canales:["DSP","D+"],jornada:2},
+  // Fecha 3
+  {id:49,dia:"Mié 24 jun",fecha:"2026-06-24",equipos:["Suiza","Canadá"],grupo:"B",horaSantiago:"15:00",sede:"Vancouver",canales:["DSP"],jornada:3},
+  {id:50,dia:"Mié 24 jun",fecha:"2026-06-24",equipos:["Bosnia y Herz.","Qatar"],grupo:"B",horaSantiago:"15:00",sede:"Seattle",canales:["DSP"],jornada:3},
+  {id:51,dia:"Mié 24 jun",fecha:"2026-06-24",equipos:["Brasil","Escocia"],grupo:"C",horaSantiago:"18:00",sede:"Miami",canales:["CHV","DSP","D+"],jornada:3},
+  {id:52,dia:"Mié 24 jun",fecha:"2026-06-24",equipos:["Marruecos","Haití"],grupo:"C",horaSantiago:"18:00",sede:"Atlanta",canales:["DSP"],jornada:3},
+  {id:53,dia:"Mié 24 jun",fecha:"2026-06-24",equipos:["México","Rep. Checa"],grupo:"A",horaSantiago:"21:00",sede:"Ciudad de México",canales:["CHV","DSP"],jornada:3},
+  {id:54,dia:"Mié 24 jun",fecha:"2026-06-24",equipos:["Sudáfrica","Corea del Sur"],grupo:"A",horaSantiago:"21:00",sede:"Monterrey",canales:["DSP"],jornada:3},
+  {id:55,dia:"Jue 25 jun",fecha:"2026-06-25",equipos:["Curazao","Costa de Marfil"],grupo:"E",horaSantiago:"16:00",sede:"Filadelfia",canales:["DSP"],jornada:3},
+  {id:56,dia:"Jue 25 jun",fecha:"2026-06-25",equipos:["Ecuador","Alemania"],grupo:"E",horaSantiago:"16:00",sede:"Nueva Jersey",canales:["CHV","DSP","D+"],jornada:3},
+  {id:57,dia:"Jue 25 jun",fecha:"2026-06-25",equipos:["Japón","Suecia"],grupo:"F",horaSantiago:"19:00",sede:"Dallas",canales:["DSP"],jornada:3},
+  {id:58,dia:"Jue 25 jun",fecha:"2026-06-25",equipos:["Túnez","Países Bajos"],grupo:"F",horaSantiago:"19:00",sede:"Kansas City",canales:["CHV","DSP"],jornada:3},
+  {id:59,dia:"Jue 25 jun",fecha:"2026-06-25",equipos:["Turquía","Estados Unidos"],grupo:"D",horaSantiago:"22:00",sede:"Los Ángeles",canales:["DSP"],jornada:3},
+  {id:60,dia:"Jue 25 jun",fecha:"2026-06-25",equipos:["Paraguay","Australia"],grupo:"D",horaSantiago:"22:00",sede:"San Francisco",canales:["CHV","DSP"],jornada:3},
+  {id:61,dia:"Vie 26 jun",fecha:"2026-06-26",equipos:["Noruega","Francia"],grupo:"I",horaSantiago:"15:00",sede:"Boston",canales:["CHV","DSP"],jornada:3},
+  {id:62,dia:"Vie 26 jun",fecha:"2026-06-26",equipos:["Senegal","Irak"],grupo:"I",horaSantiago:"15:00",sede:"Toronto",canales:["DSP"],jornada:3},
+  {id:63,dia:"Vie 26 jun",fecha:"2026-06-26",equipos:["Cabo Verde","Arabia Saudita"],grupo:"H",horaSantiago:"20:00",sede:"Houston",canales:["DSP"],jornada:3},
+  {id:64,dia:"Vie 26 jun",fecha:"2026-06-26",equipos:["Uruguay","España"],grupo:"H",horaSantiago:"20:00",sede:"Guadalajara",canales:["CHV","DSP","D+"],jornada:3},
+  {id:65,dia:"Vie 26 jun",fecha:"2026-06-26",equipos:["Egipto","Irán"],grupo:"G",horaSantiago:"23:00",sede:"Seattle",canales:["DSP"],jornada:3},
+  {id:66,dia:"Vie 26 jun",fecha:"2026-06-26",equipos:["Nueva Zelanda","Bélgica"],grupo:"G",horaSantiago:"23:00",sede:"Vancouver",canales:["DSP"],jornada:3},
+  {id:67,dia:"Sáb 27 jun",fecha:"2026-06-27",equipos:["Inglaterra","Panamá"],grupo:"L",horaSantiago:"17:00",sede:"Nueva Jersey",canales:["DSP"],jornada:3},
+  {id:68,dia:"Sáb 27 jun",fecha:"2026-06-27",equipos:["Croacia","Ghana"],grupo:"L",horaSantiago:"17:00",sede:"Filadelfia",canales:["DSP"],jornada:3},
+  {id:69,dia:"Sáb 27 jun",fecha:"2026-06-27",equipos:["Portugal","Colombia"],grupo:"K",horaSantiago:"19:30",sede:"Miami",canales:["CHV","DSP","D+"],jornada:3},
+  {id:70,dia:"Sáb 27 jun",fecha:"2026-06-27",equipos:["RD Congo","Uzbekistán"],grupo:"K",horaSantiago:"19:30",sede:"Atlanta",canales:["DSP"],jornada:3},
+  {id:71,dia:"Sáb 27 jun",fecha:"2026-06-27",equipos:["Argentina","Jordania"],grupo:"J",horaSantiago:"22:00",sede:"Dallas",canales:["DSP","D+"],jornada:3},
+  {id:72,dia:"Sáb 27 jun",fecha:"2026-06-27",equipos:["Argelia","Austria"],grupo:"J",horaSantiago:"22:00",sede:"Kansas City",canales:["DSP"],jornada:3},
+];
+
+const GRUPOS = ["A","B","C","D","E","F","G","H","I","J","K","L"];
+
+function addHr(hora) {
+  const [h, m] = hora.split(":").map(Number);
+  return `${String((h + AYSEN_OFFSET) % 24).padStart(2,"0")}:${String(m).padStart(2,"0")}`;
+}
+
+function canalColor(c) {
+  if (c === "CHV") return { bg: "#1a3f8f", color: "#fff" };
+  if (c === "DSP") return { bg: "#e8501e", color: "#fff" };
+  if (c === "D+")  return { bg: "#0d6cf0", color: "#fff" };
+  return { bg: "#888", color: "#fff" };
+}
+
+const flagEmoji = {
+  "México":"🇲🇽","Sudáfrica":"🇿🇦","Corea del Sur":"🇰🇷","Rep. Checa":"🇨🇿",
+  "Canadá":"🇨🇦","Bosnia y Herz.":"🇧🇦","Estados Unidos":"🇺🇸","Paraguay":"🇵🇾",
+  "Qatar":"🇶🇦","Suiza":"🇨🇭","Brasil":"🇧🇷","Marruecos":"🇲🇦","Haití":"🇭🇹",
+  "Escocia":"🏴󠁧󠁢󠁳󠁣󠁴󠁿","Australia":"🇦🇺","Turquía":"🇹🇷","Alemania":"🇩🇪","Curazao":"🇨🇼",
+  "Países Bajos":"🇳🇱","Japón":"🇯🇵","Costa de Marfil":"🇨🇮","Ecuador":"🇪🇨",
+  "Suecia":"🇸🇪","Túnez":"🇹🇳","España":"🇪🇸","Cabo Verde":"🇨🇻","Bélgica":"🇧🇪",
+  "Egipto":"🇪🇬","Arabia Saudita":"🇸🇦","Uruguay":"🇺🇾","Irán":"🇮🇷",
+  "Nueva Zelanda":"🇳🇿","Francia":"🇫🇷","Senegal":"🇸🇳","Irak":"🇮🇶","Noruega":"🇳🇴",
+  "Argentina":"🇦🇷","Argelia":"🇩🇿","Austria":"🇦🇹","Jordania":"🇯🇴",
+  "Portugal":"🇵🇹","RD Congo":"🇨🇩","Uzbekistán":"🇺🇿","Colombia":"🇨🇴",
+  "Inglaterra":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Croacia":"🇭🇷","Ghana":"🇬🇭","Panamá":"🇵🇦",
+};
+
+const f = (e) => flagEmoji[e] || "🏴";
+
+// ────────────────────────────────────────────────
+export default function App() {
+  const [tab, setTab] = useState("fixture");
+  const [resultados, setResultados] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("wc26_res") || "{}"); } catch { return {}; }
+  });
+  const [loading, setLoading] = useState(false);
+  const [aiMsg, setAiMsg] = useState("");
+  const [aiInput, setAiInput] = useState("");
+  const [aiHistory, setAiHistory] = useState([]);
+  const [filtroCanal, setFiltroCanal] = useState("todos");
+  const [busqueda, setBusqueda] = useState("");
+  const [fechaSel, setFechaSel] = useState("todas");
+  const [editando, setEditando] = useState(null);
+  const [tempScore, setTempScore] = useState(["",""]);
+
+  // Persistir resultados
+  useEffect(() => {
+    try { localStorage.setItem("wc26_res", JSON.stringify(resultados)); } catch {}
+  }, [resultados]);
+
+  // Cargar resultados con IA
+  const fetchResultados = useCallback(async () => {
+    setLoading(true);
+    setAiMsg("Buscando resultados actualizados...");
+    try {
+      const res = await fetch("/api/claude", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1000,
+          tools: [{ type: "web_search_20250305", name: "web_search" }],
+          messages: [{
+            role: "user",
+            content: `Busca los resultados más recientes del Mundial de Fútbol 2026. Para cada partido jugado, dame el resultado en formato JSON exactamente así (solo JSON, sin texto adicional, sin markdown):
+{"resultados": [{"id": NUMERO_PARTIDO, "goles": [GOL_LOCAL, GOL_VISITA]}]}
+
+Los IDs de partidos son:
+${PARTIDOS_BASE.map(p => `ID ${p.id}: ${p.equipos[0]} vs ${p.equipos[1]} (${p.dia})`).join("\n")}
+
+Solo incluye partidos que ya se hayan jugado. Si un partido no tiene resultado, no lo incluyas.`
+          }]
+        })
+      });
+      const data = await res.json();
+      const texto = data.content?.map(b => b.type === "text" ? b.text : "").join("");
+      const match = texto.match(/\{[\s\S]*"resultados"[\s\S]*\}/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        const nuevos = {};
+        parsed.resultados.forEach(r => { nuevos[r.id] = r.goles; });
+        setResultados(prev => ({ ...prev, ...nuevos }));
+        setAiMsg(`✓ ${Object.keys(nuevos).length} partido(s) actualizados`);
+      } else {
+        setAiMsg("No se encontraron nuevos resultados.");
+      }
+    } catch (e) {
+      setAiMsg("Error al obtener resultados. Intenta de nuevo.");
+    }
+    setLoading(false);
+  }, []);
+
+  // Chat con IA
+  const askAI = useCallback(async () => {
+    if (!aiInput.trim()) return;
+    const userMsg = aiInput.trim();
+    setAiInput("");
+    const newHistory = [...aiHistory, { role: "user", content: userMsg }];
+    setAiHistory(newHistory);
+    setLoading(true);
+
+    const resumenPartidos = PARTIDOS_BASE.map(p => {
+      const r = resultados[p.id];
+      return `${p.equipos[0]} vs ${p.equipos[1]} (Grupo ${p.grupo}, ${p.dia})${r ? `: ${r[0]}-${r[1]}` : ": pendiente"}`;
+    }).join("\n");
+
+    try {
+      const res = await fetch("/api/claude", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1000,
+          tools: [{ type: "web_search_20250305", name: "web_search" }],
+          system: `Eres el asistente del Mundial 2026 para hinchas en Coyhaique, Chile (zona horaria UTC-3). 
+Tienes estos resultados conocidos del torneo:
+${resumenPartidos}
+Responde en español, de forma concisa y amigable. Si el usuario pregunta por resultados, usa web_search para obtener info actualizada.`,
+          messages: newHistory
+        })
+      });
+      const data = await res.json();
+      const texto = data.content?.map(b => b.type === "text" ? b.text : "").filter(Boolean).join("\n");
+      const respuesta = texto || "No pude obtener una respuesta.";
+      setAiHistory([...newHistory, { role: "assistant", content: respuesta }]);
+    } catch {
+      setAiHistory([...newHistory, { role: "assistant", content: "Error al consultar. Intenta de nuevo." }]);
+    }
+    setLoading(false);
+  }, [aiInput, aiHistory, resultados]);
+
+  // Tabla de posiciones
+  const calcTabla = (grupo) => {
+    const equiposGrupo = [...new Set(
+      PARTIDOS_BASE.filter(p => p.grupo === grupo).flatMap(p => p.equipos)
+    )];
+    const tabla = {};
+    equiposGrupo.forEach(eq => { tabla[eq] = { pts:0, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, dg:0 }; });
+    PARTIDOS_BASE.filter(p => p.grupo === grupo).forEach(p => {
+      const r = resultados[p.id];
+      if (!r) return;
+      const [l, v] = r;
+      const [e1, e2] = p.equipos;
+      tabla[e1].pj++; tabla[e1].gf += l; tabla[e1].gc += v; tabla[e1].dg += l - v;
+      tabla[e2].pj++; tabla[e2].gf += v; tabla[e2].gc += l; tabla[e2].dg += v - l;
+      if (l > v) { tabla[e1].pg++; tabla[e1].pts += 3; tabla[e2].pp++; }
+      else if (l === v) { tabla[e1].pe++; tabla[e1].pts++; tabla[e2].pe++; tabla[e2].pts++; }
+      else { tabla[e2].pg++; tabla[e2].pts += 3; tabla[e1].pp++; }
+    });
+    return Object.entries(tabla).sort((a,b) => b[1].pts - a[1].pts || b[1].dg - a[1].dg || b[1].gf - a[1].gf);
+  };
+
+  // Estadísticas globales
+  const calcStats = () => {
+    const jugados = Object.keys(resultados).length;
+    let goles = 0, victorias = 0, empates = 0;
+    Object.values(resultados).forEach(([l,v]) => {
+      goles += l + v;
+      if (l === v) empates++;
+      else victorias++;
+    });
+    return { jugados, goles, victorias, empates, promedio: jugados ? (goles / jugados).toFixed(1) : 0 };
+  };
+
+  const stats = calcStats();
+
+  const fechasUnicas = [...new Set(PARTIDOS_BASE.map(p => p.fecha))].sort();
+
+  const partidosFiltrados = PARTIDOS_BASE.filter(p => {
+    const busq = busqueda.toLowerCase();
+    const matchBusq = !busq || p.equipos.some(e => e.toLowerCase().includes(busq));
+    const matchCanal = filtroCanal === "todos" || p.canales.includes(filtroCanal);
+    const matchFecha = fechaSel === "todas" || p.fecha === fechaSel;
+    return matchBusq && matchCanal && matchFecha;
+  });
+
+  const partidosPorFecha = (fecha) => PARTIDOS_BASE.filter(p => p.fecha === fecha).length;
+  const partidosJugadosPorFecha = (fecha) => PARTIDOS_BASE.filter(p => p.fecha === fecha && resultados[p.id]).length;
+
+  const formatFechaChip = (fechaStr) => {
+    const d = new Date(fechaStr + "T12:00:00");
+    const diaSemana = ["DOM","LUN","MAR","MIÉ","JUE","VIE","SÁB"][d.getDay()];
+    return { diaSemana, diaNum: d.getDate() };
+  };
+
+  const formatFechaLarga = (fechaStr) => {
+    if (fechaStr === "todas") return "Todas las fechas";
+    const d = new Date(fechaStr + "T12:00:00");
+    const meses = ["enero","febrero","marzo","abril","mayo","junio","julio"];
+    const dias = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+    return `${dias[d.getDay()]} ${d.getDate()} de ${meses[d.getMonth()]}`;
+  };
+
+  const guardarScore = (id) => {
+    const [a, b] = tempScore;
+    if (a === "" || b === "" || isNaN(+a) || isNaN(+b)) return;
+    setResultados(prev => ({ ...prev, [id]: [+a, +b] }));
+    setEditando(null);
+  };
+
+  return (
+    <div style={{ fontFamily: "var(--font-sans, system-ui)", maxWidth: 700, margin: "0 auto", padding: "0 0 2rem" }}>
+      {/* Header */}
+      <div style={{ background: "linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%)", padding: "1.5rem 1.25rem 1rem", borderRadius: "0 0 16px 16px", marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+          <span style={{ fontSize: 32 }}>🏆</span>
+          <div>
+            <div style={{ color: "#fff", fontWeight: 600, fontSize: 18, lineHeight: 1.2 }}>Mundial 2026</div>
+            <div style={{ color: "#94a3b8", fontSize: 12 }}>Horario Coyhaique · UTC-3</div>
+          </div>
+          <button onClick={fetchResultados} disabled={loading}
+            style={{ marginLeft: "auto", background: loading ? "#334155" : "#e8501e", color: "#fff", border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12, cursor: loading ? "default" : "pointer", fontWeight: 500 }}>
+            {loading ? "Cargando..." : "⟳ Actualizar"}
+          </button>
+        </div>
+        {/* Mini stats */}
+        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+          {[
+            { label: "Jugados", val: stats.jugados },
+            { label: "Goles", val: stats.goles },
+            { label: "Promedio", val: stats.promedio + "/j" },
+            { label: "Empates", val: stats.empates },
+          ].map(s => (
+            <div key={s.label} style={{ flex: 1, background: "rgba(255,255,255,0.08)", borderRadius: 8, padding: "6px 8px", textAlign: "center" }}>
+              <div style={{ color: "#fff", fontWeight: 600, fontSize: 16 }}>{s.val}</div>
+              <div style={{ color: "#94a3b8", fontSize: 10 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+        {aiMsg && <div style={{ marginTop: 8, color: "#86efac", fontSize: 11 }}>{aiMsg}</div>}
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display: "flex", gap: 4, padding: "0 8px", marginBottom: 12 }}>
+        {[["fixture","📋 Fixture"],["tabla","📊 Posiciones"],["stats","📈 Stats"],["chat","🤖 Asistente"]].map(([k,l]) => (
+          <button key={k} onClick={() => setTab(k)} style={{
+            flex: 1, padding: "8px 4px", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: "pointer",
+            background: tab === k ? "#1a3f8f" : "var(--color-background-secondary, #f1f5f9)",
+            color: tab === k ? "#fff" : "var(--color-text-secondary, #64748b)"
+          }}>{l}</button>
+        ))}
+      </div>
+
+      {/* ── FIXTURE ── */}
+      {tab === "fixture" && (
+        <div style={{ padding: "0 8px" }}>
+          {/* Calendario de fechas */}
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
+              <button onClick={() => setFechaSel("todas")} style={{
+                flexShrink: 0, minWidth: 52, padding: "8px 6px", borderRadius: 10, border: "none", cursor: "pointer",
+                background: fechaSel === "todas" ? "#1a3f8f" : "var(--color-background-secondary,#f1f5f9)",
+                color: fechaSel === "todas" ? "#fff" : "var(--color-text-primary,#0f172a)",
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center"
+              }}>
+                <span style={{ fontSize: 16 }}>📅</span>
+                <span style={{ fontSize: 9, fontWeight: 600, marginTop: 2 }}>TODAS</span>
+              </button>
+              {fechasUnicas.map(fecha => {
+                const { diaSemana, diaNum } = formatFechaChip(fecha);
+                const total = partidosPorFecha(fecha);
+                const jugados = partidosJugadosPorFecha(fecha);
+                const isSel = fechaSel === fecha;
+                return (
+                  <button key={fecha} onClick={() => setFechaSel(fecha)} style={{
+                    flexShrink: 0, minWidth: 52, padding: "6px 6px 7px", borderRadius: 10, border: "none", cursor: "pointer", position: "relative",
+                    background: isSel ? "#1a3f8f" : "var(--color-background-secondary,#f1f5f9)",
+                    color: isSel ? "#fff" : "var(--color-text-primary,#0f172a)",
+                    display: "flex", flexDirection: "column", alignItems: "center"
+                  }}>
+                    <span style={{ fontSize: 9, fontWeight: 600, opacity: isSel ? 0.85 : 0.6 }}>{diaSemana}</span>
+                    <span style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.3 }}>{diaNum}</span>
+                    <span style={{ fontSize: 8, opacity: isSel ? 0.85 : 0.55 }}>{total} {total === 1 ? "partido" : "partidos"}</span>
+                    {jugados > 0 && (
+                      <span style={{
+                        position: "absolute", top: 3, right: 3, width: 6, height: 6, borderRadius: "50%",
+                        background: jugados === total ? "#22c55e" : "#facc15"
+                      }}></span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--color-text-secondary,#64748b)", marginTop: 6, padding: "0 2px", textTransform: "capitalize" }}>
+              {formatFechaLarga(fechaSel)}
+              {fechaSel !== "todas" && ` · ${partidosPorFecha(fechaSel)} partido${partidosPorFecha(fechaSel) === 1 ? "" : "s"}`}
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+            <input value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar equipo..."
+              style={{ flex: 1, padding: "7px 12px", borderRadius: 8, border: "0.5px solid var(--color-border-secondary,#cbd5e1)", fontSize: 13, background: "var(--color-background-primary,#fff)", color: "var(--color-text-primary,#0f172a)" }} />
+            <select value={filtroCanal} onChange={e => setFiltroCanal(e.target.value)}
+              style={{ padding: "7px 10px", borderRadius: 8, border: "0.5px solid var(--color-border-secondary,#cbd5e1)", fontSize: 12, background: "var(--color-background-primary,#fff)", color: "var(--color-text-primary,#0f172a)" }}>
+              <option value="todos">Todos</option>
+              <option value="CHV">Solo CHV</option>
+              <option value="DSP">DSports</option>
+              <option value="D+">Disney+</option>
+            </select>
+          </div>
+          {(() => {
+            let lastDia = "";
+            return partidosFiltrados.map(p => {
+              const showDia = p.dia !== lastDia;
+              lastDia = p.dia;
+              const res = resultados[p.id];
+              const [e1, e2] = p.equipos;
+              const isEdit = editando === p.id;
+              return (
+                <div key={p.id}>
+                  {showDia && <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-secondary,#64748b)", textTransform: "uppercase", letterSpacing: ".06em", margin: "12px 0 5px", padding: "0 2px" }}>{p.dia} · Grupo {p.grupo}</div>}
+                  <div style={{ background: "var(--color-background-primary,#fff)", border: "0.5px solid var(--color-border-tertiary,#e2e8f0)", borderRadius: 10, padding: "10px 12px", marginBottom: 5, display: "grid", gridTemplateColumns: "50px 1fr auto", gap: 8, alignItems: "center" }}>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text-primary,#0f172a)" }}>{addHr(p.horaSantiago)}</div>
+                      <div style={{ fontSize: 10, color: "var(--color-text-secondary,#64748b)" }}>{p.horaSantiago} Stgo</div>
+                    </div>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4 }}>
+                        <span style={{ fontSize: 13, fontWeight: 500 }}>{f(e1)} {e1}</span>
+                        {isEdit ? (
+                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                            <input type="number" min="0" max="20" value={tempScore[0]} onChange={e => setTempScore([e.target.value, tempScore[1]])}
+                              style={{ width: 36, textAlign: "center", borderRadius: 6, border: "1px solid #cbd5e1", fontSize: 14, fontWeight: 700, padding: "2px 0" }} />
+                            <span style={{ color: "#94a3b8" }}>-</span>
+                            <input type="number" min="0" max="20" value={tempScore[1]} onChange={e => setTempScore([tempScore[0], e.target.value])}
+                              style={{ width: 36, textAlign: "center", borderRadius: 6, border: "1px solid #cbd5e1", fontSize: 14, fontWeight: 700, padding: "2px 0" }} />
+                            <button onClick={() => guardarScore(p.id)} style={{ background: "#1a3f8f", color: "#fff", border: "none", borderRadius: 6, padding: "3px 8px", fontSize: 11, cursor: "pointer" }}>OK</button>
+                            <button onClick={() => setEditando(null)} style={{ background: "#e2e8f0", border: "none", borderRadius: 6, padding: "3px 7px", fontSize: 11, cursor: "pointer" }}>✕</button>
+                          </div>
+                        ) : res ? (
+                          <span style={{ fontWeight: 700, fontSize: 15, color: "#1a3f8f", cursor: "pointer" }} onClick={() => { setEditando(p.id); setTempScore([res[0],res[1]]); }}>
+                            {res[0]} – {res[1]}
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: 11, color: "#94a3b8", cursor: "pointer" }} onClick={() => { setEditando(p.id); setTempScore(["",""]); }}>+ resultado</span>
+                        )}
+                        <span style={{ fontSize: 13, fontWeight: 500, textAlign: "right" }}>{e2} {f(e2)}</span>
+                      </div>
+                      <div style={{ fontSize: 10, color: "var(--color-text-secondary,#64748b)", marginTop: 3 }}>{p.sede}</div>
+                      <div style={{ display: "flex", gap: 3, marginTop: 4 }}>
+                        {p.canales.map(c => { const s = canalColor(c); return <span key={c} style={{ fontSize: 9, fontWeight: 600, padding: "1px 5px", borderRadius: 4, background: s.bg, color: s.color }}>{c}</span>; })}
+                      </div>
+                    </div>
+                    {res && <div style={{ fontSize: 10, color: "#22c55e", textAlign: "center" }}>✓<br/>Final</div>}
+                  </div>
+                </div>
+              );
+            });
+          })()}
+        </div>
+      )}
+
+      {/* ── TABLA DE POSICIONES ── */}
+      {tab === "tabla" && (
+        <div style={{ padding: "0 8px" }}>
+          {GRUPOS.map(g => {
+            const tabla = calcTabla(g);
+            const tieneResultados = PARTIDOS_BASE.filter(p => p.grupo === g).some(p => resultados[p.id]);
+            return (
+              <div key={g} style={{ marginBottom: 16 }}>
+                <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 5, color: "var(--color-text-primary,#0f172a)" }}>Grupo {g}</div>
+                <div style={{ background: "var(--color-background-primary,#fff)", border: "0.5px solid var(--color-border-tertiary,#e2e8f0)", borderRadius: 10, overflow: "hidden" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 32px 32px 32px 32px 32px 36px", gap: 2, padding: "6px 10px", background: "var(--color-background-secondary,#f8fafc)", fontSize: 10, fontWeight: 600, color: "var(--color-text-secondary,#64748b)", textTransform: "uppercase" }}>
+                    <span>Equipo</span><span style={{textAlign:"center"}}>PJ</span><span style={{textAlign:"center"}}>G</span><span style={{textAlign:"center"}}>E</span><span style={{textAlign:"center"}}>P</span><span style={{textAlign:"center"}}>DG</span><span style={{textAlign:"center"}}>Pts</span>
+                  </div>
+                  {tabla.map(([eq, d], i) => (
+                    <div key={eq} style={{ display: "grid", gridTemplateColumns: "1fr 32px 32px 32px 32px 32px 36px", gap: 2, padding: "7px 10px", borderTop: "0.5px solid var(--color-border-tertiary,#e2e8f0)", alignItems: "center", background: i < 2 && tieneResultados ? "rgba(26,63,143,0.04)" : "transparent" }}>
+                      <span style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 5 }}>
+                        {tieneResultados && i < 2 && <span style={{ width: 4, height: 4, background: "#1a3f8f", borderRadius: "50%", display: "inline-block" }}></span>}
+                        {f(eq)} {eq}
+                      </span>
+                      {[d.pj, d.pg, d.pe, d.pp, (d.dg > 0 ? "+" : "") + d.dg].map((v, j) => (
+                        <span key={j} style={{ textAlign: "center", fontSize: 12, color: "var(--color-text-secondary,#64748b)" }}>{v}</span>
+                      ))}
+                      <span style={{ textAlign: "center", fontSize: 13, fontWeight: 700, color: "var(--color-text-primary,#0f172a)" }}>{d.pts}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+          <div style={{ fontSize: 11, color: "var(--color-text-secondary,#64748b)", textAlign: "center" }}>● = clasificado a Ronda de 32 (provisional)</div>
+        </div>
+      )}
+
+      {/* ── ESTADÍSTICAS ── */}
+      {tab === "stats" && (
+        <div style={{ padding: "0 8px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+            {[
+              { label: "Partidos jugados", val: stats.jugados, total: 72, color: "#1a3f8f" },
+              { label: "Goles totales", val: stats.goles, color: "#e8501e" },
+              { label: "Promedio goles/partido", val: stats.promedio, color: "#0d6cf0" },
+              { label: "Partidos con empate", val: stats.empates, color: "#7c3aed" },
+            ].map(s => (
+              <div key={s.label} style={{ background: "var(--color-background-primary,#fff)", border: "0.5px solid var(--color-border-tertiary,#e2e8f0)", borderRadius: 12, padding: "14px 16px" }}>
+                <div style={{ fontSize: 26, fontWeight: 700, color: s.color }}>{s.val}{s.total ? <span style={{ fontSize: 13, fontWeight: 400, color: "#94a3b8" }}>/{s.total}</span> : ""}</div>
+                <div style={{ fontSize: 12, color: "var(--color-text-secondary,#64748b)", marginTop: 3 }}>{s.label}</div>
+                {s.total && <div style={{ marginTop: 6, height: 4, background: "#e2e8f0", borderRadius: 2 }}><div style={{ height: 4, background: s.color, borderRadius: 2, width: `${(s.val/s.total*100).toFixed(0)}%` }}></div></div>}
+              </div>
+            ))}
+          </div>
+          {/* Goles por grupo */}
+          <div style={{ background: "var(--color-background-primary,#fff)", border: "0.5px solid var(--color-border-tertiary,#e2e8f0)", borderRadius: 12, padding: "14px 16px", marginBottom: 12 }}>
+            <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 10 }}>Goles por grupo</div>
+            {GRUPOS.map(g => {
+              const golesG = PARTIDOS_BASE.filter(p => p.grupo === g && resultados[p.id]).reduce((a, p) => a + resultados[p.id][0] + resultados[p.id][1], 0);
+              const jugadosG = PARTIDOS_BASE.filter(p => p.grupo === g && resultados[p.id]).length;
+              return (
+                <div key={g} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, width: 52, color: "var(--color-text-secondary,#64748b)" }}>Grupo {g}</span>
+                  <div style={{ flex: 1, height: 8, background: "#e2e8f0", borderRadius: 4 }}>
+                    <div style={{ height: 8, background: "#e8501e", borderRadius: 4, width: `${Math.min(golesG / 18 * 100, 100)}%`, transition: "width 0.4s" }}></div>
+                  </div>
+                  <span style={{ fontSize: 11, color: "var(--color-text-primary,#0f172a)", width: 40, textAlign: "right" }}>{golesG} goles{jugadosG ? ` (${jugadosG}p)` : ""}</span>
+                </div>
+              );
+            })}
+          </div>
+          {/* Top anotadores (si existen) */}
+          <div style={{ background: "var(--color-background-secondary,#f8fafc)", border: "0.5px solid var(--color-border-tertiary,#e2e8f0)", borderRadius: 12, padding: "14px 16px", fontSize: 12, color: "var(--color-text-secondary,#64748b)" }}>
+            <div style={{ fontWeight: 600, color: "var(--color-text-primary,#0f172a)", marginBottom: 6, fontSize: 13 }}>🤖 Estadísticas avanzadas</div>
+            Activa el Asistente IA para consultar goleadores, estadísticas detalladas, noticias del torneo y más.
+            <br/><button onClick={() => setTab("chat")} style={{ marginTop: 8, background: "#1a3f8f", color: "#fff", border: "none", borderRadius: 6, padding: "5px 12px", fontSize: 12, cursor: "pointer" }}>Abrir asistente →</button>
+          </div>
+        </div>
+      )}
+
+      {/* ── CHAT IA ── */}
+      {tab === "chat" && (
+        <div style={{ padding: "0 8px" }}>
+          <div style={{ background: "var(--color-background-primary,#fff)", border: "0.5px solid var(--color-border-tertiary,#e2e8f0)", borderRadius: 12, padding: 12, minHeight: 280, maxHeight: 380, overflowY: "auto", marginBottom: 8 }}>
+            {aiHistory.length === 0 && (
+              <div style={{ textAlign: "center", padding: "2rem 1rem", color: "var(--color-text-secondary,#64748b)" }}>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>🤖</div>
+                <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 4 }}>Asistente Mundial 2026</div>
+                <div style={{ fontSize: 12 }}>Pregúntame sobre resultados, grupos, estadísticas, horarios o cualquier cosa del torneo.</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginTop: 12 }}>
+                  {["¿Qué partidos se jugaron hoy?","¿Cómo va Argentina?","¿Quiénes están clasificando al Grupo A?","Goleadores del torneo"].map(s => (
+                    <button key={s} onClick={() => setAiInput(s)} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 20, border: "0.5px solid var(--color-border-secondary,#cbd5e1)", background: "var(--color-background-secondary,#f1f5f9)", cursor: "pointer", color: "var(--color-text-primary,#0f172a)" }}>{s}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {aiHistory.map((m, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start", marginBottom: 8 }}>
+                <div style={{
+                  maxWidth: "82%", padding: "8px 12px", borderRadius: 10, fontSize: 13, lineHeight: 1.5,
+                  background: m.role === "user" ? "#1a3f8f" : "var(--color-background-secondary,#f1f5f9)",
+                  color: m.role === "user" ? "#fff" : "var(--color-text-primary,#0f172a)",
+                  whiteSpace: "pre-wrap"
+                }}>{m.content}</div>
+              </div>
+            ))}
+            {loading && <div style={{ fontSize: 12, color: "#94a3b8", padding: "4px 8px" }}>Consultando...</div>}
+          </div>
+          <div style={{ display: "flex", gap: 6 }}>
+            <input value={aiInput} onChange={e => setAiInput(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && !loading && askAI()}
+              placeholder="Pregunta algo del Mundial..."
+              style={{ flex: 1, padding: "9px 14px", borderRadius: 8, border: "0.5px solid var(--color-border-secondary,#cbd5e1)", fontSize: 13, background: "var(--color-background-primary,#fff)", color: "var(--color-text-primary,#0f172a)" }} />
+            <button onClick={askAI} disabled={loading || !aiInput.trim()}
+              style={{ background: "#e8501e", color: "#fff", border: "none", borderRadius: 8, padding: "0 16px", cursor: loading ? "default" : "pointer", fontSize: 18, opacity: loading || !aiInput.trim() ? 0.5 : 1 }}>→</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
